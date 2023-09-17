@@ -1,202 +1,113 @@
-const board = document.getElementById("game-board");
-const scoreDisplay = document.getElementById("score");
-const ROWS = 20;
-const COLUMNS = 10;
-const BLOCK_SIZE = 30;
-const EMPTY = "white";
+// game.js
+const canvas = document.getElementById("game-canvas");
+const ctx = canvas.getContext("2d");
 
-// Create an empty game board
-const boardArray = Array.from({ length: ROWS }, () =>
-  Array(COLUMNS).fill(EMPTY)
-);
+// Game variables
+let playerX = 50;
+const playerY = canvas.height - 30;
+const playerWidth = 20;
+const playerHeight = 20;
+const playerSpeed = 2;
 
-function drawBoard() {
-  board.innerHTML = "";
-  boardArray.forEach((row) => {
-    row.forEach((cell) => {
-      const block = document.createElement("div");
-      block.style.width = BLOCK_SIZE + "px";
-      block.style.height = BLOCK_SIZE + "px";
-      block.style.backgroundColor = cell;
-      board.appendChild(block);
-    });
-  });
-}
+// Obstacle variables
+const obstacleWidth = 30;
+const obstacleHeight = 30;
+let obstacles = [];
 
-drawBoard();
+// High score variable
+let highScore = 0;
 
-// Define Tetrominoes
-const tetrominoes = {
-  I: [
-    [1, 1, 1, 1],
-  ],
-  J: [
-    [0, 0, 1],
-    [1, 1, 1],
-  ],
-  L: [
-    [1, 0, 0],
-    [1, 1, 1],
-  ],
-  O: [
-    [1, 1],
-    [1, 1],
-  ],
-  S: [
-    [0, 1, 1],
-    [1, 1, 0],
-  ],
-  T: [
-    [0, 1, 0],
-    [1, 1, 1],
-  ],
-  Z: [
-    [1, 1, 0],
-    [0, 1, 1],
-  ],
-};
-
-// Function to generate a random tetromino
-function randomTetromino() {
-  const tetrominoNames = Object.keys(tetrominoes);
-  const randomIndex = Math.floor(Math.random() * tetrominoNames.length);
-  const tetrominoName = tetrominoNames[randomIndex];
-  return tetrominoes[tetrominoName];
-}
-
-// Create the current tetromino
-let currentTetromino = randomTetromino();
-let currentX = 3;
-let currentY = 0;
-
-// Draw the current tetromino on the board
-function drawTetromino() {
-  currentTetromino.forEach((row, y) => {
-    row.forEach((cell, x) => {
-      if (cell) {
-        const block = document.createElement("div");
-        block.style.width = BLOCK_SIZE + "px";
-        block.style.height = BLOCK_SIZE + "px";
-        block.style.backgroundColor = "blue";
-        block.style.position = "absolute";
-        block.style.top = (currentY + y) * BLOCK_SIZE + "px";
-        block.style.left = (currentX + x) * BLOCK_SIZE + "px";
-        board.appendChild(block);
-      }
-    });
-  });
-}
-
-// Clear the current tetromino from the board
-function clearTetromino() {
-  Array.from(board.children).forEach((child) => {
-    child.remove();
-  });
-}
-
-// Move the current tetromino down
-function moveDown() {
-  currentY++;
-  if (checkCollision()) {
-    currentY--;
-    placeTetromino();
-    clearLines();
-    currentTetromino = randomTetromino();
-    currentX = 3;
-    currentY = 0;
-    if (checkCollision()) {
-      // Game over
-      alert("Game Over");
-      boardArray.forEach((row) => row.fill(EMPTY));
-      drawBoard();
-    }
-  }
-  clearTetromino();
-  drawTetromino();
-}
-
-// Place the current tetromino on the board
-function placeTetromino() {
-  currentTetromino.forEach((row, y) => {
-    row.forEach((cell, x) => {
-      if (cell) {
-        boardArray[currentY + y][currentX + x] = "blue";
-      }
-    });
-  });
-  drawBoard();
-}
-
-// Check for collisions (boundary or other blocks)
-function checkCollision() {
-  for (let y = 0; y < currentTetromino.length; y++) {
-    for (let x = 0; x < currentTetromino[y].length; x++) {
-      if (
-        currentTetromino[y][x] &&
-        (boardArray[currentY + y] && boardArray[currentY + y][currentX + x]) !== EMPTY
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-// Move the current tetromino left
-function moveLeft() {
-  currentX--;
-  if (checkCollision()) {
-    currentX++;
-  }
-  clearTetromino();
-  drawTetromino();
-}
-
-// Move the current tetromino right
-function moveRight() {
-  currentX++;
-  if (checkCollision()) {
-    currentX--;
-  }
-  clearTetromino();
-  drawTetromino();
-}
-
-// Rotate the current tetromino
-function rotate() {
-  const rotatedTetromino = currentTetromino[0].map((_, index) =>
-    currentTetromino.map((row) => row[index]).reverse()
-  );
-  if (
-    currentX < 0 ||
-    currentX + rotatedTetromino[0].length > COLUMNS ||
-    currentY + rotatedTetromino.length > ROWS ||
-    checkCollision(rotatedTetromino)
-  ) {
-    return;
-  }
-  currentTetromino = rotatedTetromino;
-  clearTetromino();
-  drawTetromino();
-}
-
-// Event listeners for keyboard controls
-document.addEventListener("keydown", (event) => {
-  if (event.key === "ArrowDown") {
-    moveDown();
-  } else if (event.key === "ArrowLeft") {
-    moveLeft();
-  } else if (event.key === "ArrowRight") {
-    moveRight();
-  } else if (event.key === "ArrowUp") {
-    rotate();
+// Load the high score from storage if available
+chrome.storage.sync.get(["highScore"], (result) => {
+  if (result.highScore) {
+    highScore = result.highScore;
   }
 });
 
-// Game loop
-function gameLoop() {
-  moveDown();
-  setTimeout(gameLoop, 1000);
+function updateGameArea() {
+  clearCanvas();
+  movePlayer();
+  updateObstacles();
+  drawPlayer();
+  drawObstacles();
+  checkCollision();
+  updateHighScore();
+  requestAnimationFrame(updateGameArea);
 }
 
-gameLoop();
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function movePlayer() {
+  if (playerX + playerWidth < canvas.width) {
+    playerX += playerSpeed;
+  } else {
+    playerX = -playerWidth;
+  }
+}
+
+function updateObstacles() {
+  // Create new obstacles at random intervals
+  if (Math.random() < 0.02) {
+    const obstacleX = canvas.width;
+    const obstacleY = canvas.height - obstacleHeight;
+    obstacles.push({ x: obstacleX, y: obstacleY });
+  }
+
+  // Move obstacles to the left
+  for (let i = 0; i < obstacles.length; i++) {
+    obstacles[i].x -= playerSpeed;
+  }
+
+  // Remove obstacles that are out of the canvas
+  obstacles = obstacles.filter((obstacle) => obstacle.x + obstacleWidth > 0);
+}
+
+function drawPlayer() {
+  ctx.fillStyle = "blue";
+  ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+}
+
+function drawObstacles() {
+  ctx.fillStyle = "red";
+  for (let i = 0; i < obstacles.length; i++) {
+    ctx.fillRect(obstacles[i].x, obstacles[i].y, obstacleWidth, obstacleHeight);
+  }
+}
+
+function checkCollision() {
+  for (let i = 0; i < obstacles.length; i++) {
+    const obstacle = obstacles[i];
+    if (
+      playerX < obstacle.x + obstacleWidth &&
+      playerX + playerWidth > obstacle.x &&
+      playerY < obstacle.y + obstacleHeight &&
+      playerY + playerHeight > obstacle.y
+    ) {
+      // Collision detected, reset game or perform any other actions
+      resetGame();
+      break;
+    }
+  }
+}
+
+function resetGame() {
+  if (playerX > highScore) {
+    highScore = playerX;
+    // Save the new high score to storage
+    chrome.storage.sync.set({ highScore: highScore });
+  }
+  playerX = 50;
+  obstacles = [];
+}
+
+function updateHighScore() {
+  // Display the high score on the screen
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.fillText("High Score: " + highScore, 10, 30);
+}
+
+// Start the game loop
+updateGameArea();
