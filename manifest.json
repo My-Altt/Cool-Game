@@ -1,47 +1,29 @@
 {
-  "manifest_version": 3,
-  "name": "ChromeTetris: Block Busters",
+  "manifest_version": 2,
+  "name": "Endless Runner Game",
   "version": "1.0",
-  "description": "A Tetris game Chrome extension.",
+  "description": "A simple endless runner game as a Chrome extension",
   "permissions": ["activeTab"],
-  "action": {
-    "default_popup": "index.html",
+  "browser_action": {
+    "default_popup": "popup.html",
     "default_icon": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
     }
   },
   "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
   },
-  "browser_action": {
-    "default_popup": "index.html",
-    "default_icon": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
-    }
-  },
-  "permissions": ["activeTab"],
-  },
+  "permissions": [
+    "activeTab"
+  ],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["script.js"]
+      "js": ["content.js"]
     }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["images/*"],
-      "matches": ["<all_urls>"]
-    }
-  ],
-  "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
-  }
+  ]
 }
